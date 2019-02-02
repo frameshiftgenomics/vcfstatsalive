@@ -20,6 +20,8 @@ static struct option getopt_options[] =
 	{"qual-upper-val",	optional_argument,	0, 'Q'},
 	{"log-scale-af",	optional_argument,	0, 'l'},
 	{"subset-samples",	optional_argument,	0, 'S'},
+	{"prefix",	        optional_argument,	0, 'p'},
+	{"output-directory",optional_argument,	0, 'd'},
 	{"batch",			optional_argument,	0, 'b'},
 	{0, 0, 0, 0}
 };
@@ -29,6 +31,8 @@ static unsigned int firstUpdateRate;
 static int qualHistLowerVal;
 static int qualHistUpperVal;
 static bool subsetSamples = false;
+static char *prefix = "";
+static char *outputDirectory = ".";
 static bool batch = false;
 
 void printStatsJansson(AbstractStatCollector* rootStatCollector, ostream& outstream);
@@ -81,7 +85,7 @@ int main(int argc, char* argv[]) {
 	int option_index = 0;
 
 	int ch;
-	while((ch = getopt_long (argc, argv, "f:u:q:Q:l:b:S", getopt_options, &option_index)) != -1) {
+	while((ch = getopt_long (argc, argv, "f:p:d:u:q:Q:l:b:S", getopt_options, &option_index)) != -1) {
 		switch(ch) {
 			case 0:
 				break;
@@ -111,6 +115,12 @@ int main(int argc, char* argv[]) {
 			case 'S':
 				subsetSamples = true;
 				break;
+            case 'p':
+                prefix = optarg;
+                break;
+            case 'd':
+                outputDirectory = optarg;
+                break;
 			case 'b':
 				batch = true;
 				break;
@@ -194,8 +204,13 @@ int main(int argc, char* argv[]) {
 	if(subsetSamples) {
 		for (int k=0; k<nsmpl; k++) {
 			ofstream myfile;
-			char *sampleName = strcat(hdr->samples[k], ".vcfstats.json");
-  			myfile.open (sampleName);
+			char sampleName[(strlen(outputDirectory) + strlen("/") + strlen(prefix) + strlen("_") + strlen(hdr->samples[k]) + strlen(".vcfstats.json") +1 )] = ""; 
+            snprintf(sampleName, sizeof(sampleName),"%s/%s%s%s",outputDirectory,prefix,hdr->samples[k],".vcfstats.json");
+            //char *fullPath = realpath(sampleName, NULL);
+            char fullPath[PATH_MAX]; 
+            realpath(sampleName, fullPath); 
+            printf("\n%s\n",fullPath); 
+  			myfile.open (fullPath);
 			printStatsJansson(bsc_arr[k], myfile);
 			myfile.close();
 		}
